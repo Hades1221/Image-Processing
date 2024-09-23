@@ -3,13 +3,13 @@
 // דף שמכיל את כול הפונקציות
 
 
-// קונסטרוקטור: פותח את קובץ הווידיאו
-VideoProcessor::VideoProcessor(const std::string& inputFile) : capture(inputFile) {
+// קונסטרוקטור: פותח את קובץ הווידיאו באמצעות GStreamer
+VideoProcessor::VideoProcessor(const std::string& inputFile) : capture(inputFile, cv::CAP_GSTREAMER) {
     if (!capture.isOpened()) {
-        throw std::runtime_error("Could not open input video."); 
+        throw std::runtime_error("Could not open input video using GStreamer."); 
     }
-   
 }
+
 
 // פונקצייה לחיתוך הווידיאו
 cv::Mat VideoProcessor::trimmedVideo(int startTime, int endTime) {
@@ -31,7 +31,7 @@ cv::Mat VideoProcessor::resizeVideo(const cv::Mat& videoFrames, int newWidth, in
         cv::Mat frame = videoFrames.row(i);
         cv::Mat resizedFrame;
         cv::resize(frame, resizedFrame, cv::Size(newWidth, newHeight)); // שינוי גודל
-        resizedFrames.push_back(resizedFrame); // הוסף פריימים ממוזגים
+        resizedFrames.push_back(resizedFrame); // מוסיף פריימים ממוזגים
     }
     return resizedFrames;
 }
@@ -43,7 +43,7 @@ cv::Mat VideoProcessor::rotateVideo(const cv::Mat& videoFrames, int angle) {
         cv::Mat frame = videoFrames.row(i);
         cv::Mat rotatedFrame;
 
-        // ביצוע סיבוב על פי הפרמטר
+        // ביצוע סיבוב לפי מה שהוגדר  
         if (angle == 90) {
             cv::rotate(frame, rotatedFrame, cv::ROTATE_90_CLOCKWISE);
         } else if (angle == 180) {
@@ -51,7 +51,7 @@ cv::Mat VideoProcessor::rotateVideo(const cv::Mat& videoFrames, int angle) {
         } else if (angle == 270) {
             cv::rotate(frame, rotatedFrame, cv::ROTATE_90_COUNTERCLOCKWISE);
         } else {
-            rotatedFrame = frame.clone(); // אם אין סיבוב, מחזיר את הפריים המקורי
+            rotatedFrame = frame.clone(); // אם הסיבוב לא באופציות מחזיר לפריים המקורי
         }
 
         rotatedFrames.push_back(rotatedFrame);
@@ -68,7 +68,7 @@ cv::Mat VideoProcessor::addTextOverlay(const cv::Mat& videoFrames, const std::st
 
         // הוספת הטקסט לתחתית הפריים
         cv::putText(frameWithText, text, cv::Point(10, frame.rows - 10), 
-                    cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2); // טקסט לבן
+                    cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2); // טקסט בצבע לבן
 
         framedWithText.push_back(frameWithText);
     }

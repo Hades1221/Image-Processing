@@ -1,12 +1,11 @@
 #include "../include/videoProcessor.h"
-#include <iostream>
 #include <filesystem>
-#include <opencv2/opencv.hpp>
+#include <iostream>
 
 // פונקצייה שמנגנת את הווידיאו על המסך
 void VideoProcessor::displayVideo(const std::string &videoFile)
 {
-    cv::VideoCapture processedVideo(videoFile);
+    cv::VideoCapture processedVideo(videoFile, cv::CAP_GSTREAMER); // שימוש ב-GStreamer
     if (!processedVideo.isOpened())
     {
         throw std::runtime_error("Could not open the processed video file.");
@@ -16,7 +15,7 @@ void VideoProcessor::displayVideo(const std::string &videoFile)
     while (true)
     {
         if (!processedVideo.read(frame))
-            break;                            // קרא את הפריים הבא
+            break; // קרא את הפריים הבא
         cv::imshow("Processed Video", frame); // הצג את הפריים
         if (cv::waitKey(30) >= 0)
             break; // המתן 30 מילישניות או עצור אם המשתמש לוחץ על מקש
@@ -26,18 +25,16 @@ void VideoProcessor::displayVideo(const std::string &videoFile)
     cv::destroyAllWindows();  // סגור את כל החלונות
 }
 
-// פונקצייה ששומרת את הווידיאו בפורמט AVI
+// פונקצייה ששומרת את הווידיאו בפורמט AVI באמצעות GStreamer
 void VideoProcessor::saveVideo(const cv::Mat &videoFrames, const std::string &inputFile)
 {
-    // יצירת תיקייה חדשה אם אינה קיימת
-    std::string outputDir = "../../output";
-    std::filesystem::create_directory(outputDir);
-
-    // שמירת הווידיאו
-    std::string outputFile = outputDir + "/video.avi";
+    // קביעת התיקייה הקיימת
+    std::string outputDir = "../../output"; // תיקייה קיימת
+     std::filesystem::create_directory(outputDir); // יצירת התיקייה אם אינה קיימת
+    std::string outputFile = outputDir + "/video.avi"; // שינוי לפורמט AVI
 
     // פתיחת הווידאו המקורי כדי לקבל את ה-FPS
-    cv::VideoCapture capture(inputFile);
+    cv::VideoCapture capture(inputFile, cv::CAP_GSTREAMER); // שימוש ב-GStreamer
     if (!capture.isOpened())
     {
         throw std::runtime_error("Could not open the input video file.");
@@ -52,8 +49,8 @@ void VideoProcessor::saveVideo(const cv::Mat &videoFrames, const std::string &in
     int height = videoFrames.rows; // גובה מהפריים הראשון
 
     // יצירת ה-VideoWriter
-    cv::VideoWriter writer(outputFile, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'),
-                           fps, cv::Size(width, height));
+    std::string gstFormat = "avimux ! filesink location=" + outputFile; // הגדרת פורמט GStreamer
+    cv::VideoWriter writer(gstFormat, cv::CAP_GSTREAMER, fps, cv::Size(width, height));
 
     if (!writer.isOpened())
     {
@@ -67,12 +64,11 @@ void VideoProcessor::saveVideo(const cv::Mat &videoFrames, const std::string &in
     }
 
     writer.release();
-    capture.release();
-
     displayVideo(outputFile);
 }
 
-// פונקצייה שמקבלת את הווידיאו ומחילה עליו את כול פונקציות העיבוד ולבסוך קוראת לפונקציית השמירה
+
+// פונקצייה שמקבלת את הווידיאו ומחילה עליו את כול פונקציות העיבוד ולבסוף קוראת לפונקציית השמירה
 void processVideo(const std::string &inputFile){
 
     VideoProcessor processor(inputFile);
@@ -92,7 +88,6 @@ void processVideo(const std::string &inputFile){
     // החלת פילטר
     cv::Mat filteredVideo = processor.applyFilter(videoWithText);
 
-    //  שמירת הווידיאו הסופי בפורמט שונה
+    // שמירת הווידיאו הסופי בפורמט שונה
     processor.saveVideo(filteredVideo, inputFile);
-
 }
