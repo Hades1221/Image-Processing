@@ -1,5 +1,5 @@
 # Video Processing Project in c++
-==========================================
+===========================================
 
 This project is a video processing application that leverages **OpenCV** and **GStreamer** to perform various operations on video files. The functionalities include trimming, resizing, rotating, adding text overlays, applying filters, and saving the processed video in a different format.
 
@@ -40,7 +40,7 @@ To install build and run the project on your computer, follow these steps:
 
 1. **Clone the repository**:
  ```bash
-   git clone https://github.com/username/awesome-project.git
+   git clone https://github.com/Hades1221/Project-Image-Processing.git
  ```
 
 2. **Build the project**:
