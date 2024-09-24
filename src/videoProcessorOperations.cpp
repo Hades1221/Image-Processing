@@ -1,93 +1,77 @@
-#include "../include/videoProcessor.h"
-#include <filesystem>
-#include <iostream>
+#include "videoProcessor.h" // תיקיית include
+#include <opencv2/opencv.hpp> // opencv
+#include <filesystem> // ליצירת תיקייה
+#include <iostream> // פלט שגיאות
 
-// פונקצייה שמנגנת את הווידיאו על המסך
-void VideoProcessor::displayVideo(const std::string &videoFile)
-{
-    cv::VideoCapture processedVideo(videoFile, cv::CAP_GSTREAMER); // שימוש ב-GStreamer
-    if (!processedVideo.isOpened())
-    {
-        throw std::runtime_error("Could not open the processed video file.");
+// פונקציה להמרה לפורמט שונה וליצירת תיקייה
+cv::VideoWriter VideoProcessor::setupOutput(const std::string& fileName, const std::string& format) {
+    // יצירת תיקיית output אם היא לא קיימת
+    std::filesystem::create_directory("output");
+
+    // בדיקה שהשם לא ריק
+    if (fileName.empty()) {
+        std::cerr << "Invalid output file name." << std::endl;
+        return cv::VideoWriter(); // החזרת אובייקט ריק
     }
 
-    cv::Mat frame;
-    while (true)
-    {
-        if (!processedVideo.read(frame))
-            break; // קרא את הפריים הבא
-        cv::imshow("Processed Video", frame); // הצג את הפריים
-        if (cv::waitKey(30) >= 0)
-            break; // המתן 30 מילישניות או עצור אם המשתמש לוחץ על מקש
-    }
+    std::string fullOutputFileName = "../../output/" + fileName + format; //  נתיב קובץ הפלט
+    
+    cv::VideoWriter writer(fullOutputFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), fps, cv::Size(640, 480)); //  לעדכן את גודל התמונה 
 
-    processedVideo.release(); // שחרור המשאבים
-    cv::destroyAllWindows();  // סגור את כל החלונות
+    return writer; 
 }
+// פונקצייה עיקרים לעיבוד הווידיאו
+void VideoProcessor::processVideo(const std::string& inputFile, int startTime, int endTime, int angle, int filterType, int windowWidth, int windowHeight, int windowX, int windowY, const std::string& text, const std::string& outputFileName, const std::string& outputFormat) {
+    cv::VideoWriter writer = setupOutput(outputFileName, outputFormat); // קריאה לפונקציית ההגדרה
 
-// פונקצייה ששומרת את הווידיאו בפורמט AVI באמצעות GStreamer
-void VideoProcessor::saveVideo(const cv::Mat &videoFrames, const std::string &inputFile)
-{
-    // קביעת התיקייה הקיימת
-    std::string outputDir = "../../output"; // תיקייה קיימת
-     std::filesystem::create_directory(outputDir); // יצירת התיקייה אם אינה קיימת
-    std::string outputFile = outputDir + "/video.avi"; // שינוי לפורמט AVI
-
-    // פתיחת הווידאו המקורי כדי לקבל את ה-FPS
-    cv::VideoCapture capture(inputFile, cv::CAP_GSTREAMER); // שימוש ב-GStreamer
-    if (!capture.isOpened())
-    {
-        throw std::runtime_error("Could not open the input video file.");
+    cv::VideoCapture cap(inputFile);
+    if (!cap.isOpened()) {
+        std::cerr << "Error opening video file." << std::endl;
+        return;
     }
 
-    // קבלת ה-FPS
-    double fps = capture.get(cv::CAP_PROP_FPS);
-    capture.release(); // שחרור משאבים
+    fps = cap.get(cv::CAP_PROP_FPS); // קבלת ה-FPS מהווידאו
+    int totalFrames = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_COUNT)); // קבלת מספר הפריימים הכולל
+    int startFrame = static_cast<int>(std::round(startTime * fps));
 
-    // קבלת ממדי הווידיאו המעובד
-    int width = videoFrames.cols;  // רוחב מהפריים הראשון
-    int height = videoFrames.rows; // גובה מהפריים הראשון
+    // אם endTime  לא הוזן (או שווה -1), משתמש באורך הווידיאו הכולל
+    if (endTime <= 0) {
+        endTime = static_cast<int>(totalFrames / fps); // קביעת זמן הסיום לאורך הסרטון
+    }
+    
+    int endFrame = static_cast<int>(std::round(endTime * fps)); // עיגול כלפי מה הקרוב
 
-    // יצירת ה-VideoWriter
-    std::string gstFormat = "avimux ! filesink location=" + outputFile; // הגדרת פורמט GStreamer
-    cv::VideoWriter writer(gstFormat, cv::CAP_GSTREAMER, fps, cv::Size(width, height));
-
-    if (!writer.isOpened())
-    {
-        throw std::runtime_error("Could not open the output video file.");
+    // ווידוא שהמספרים שהוכנסו בקלט תקינים
+    if (startFrame < 0 || endFrame <= startFrame || endFrame > totalFrames) {
+        std::cerr << "Invalid start or end time." << std::endl;
+        return;
     }
 
-    // כתיבת הפריימים
-    for (int i = 0; i < videoFrames.rows; ++i)
-    {
-        writer.write(videoFrames.row(i));
+    cap.set(cv::CAP_PROP_POS_FRAMES, startFrame); // קביעת מיקום ההתחלתי 
+
+    // קביעת גודל ומיקום החלון
+    cv::namedWindow("Processing Video", cv::WINDOW_NORMAL); // אפשרות  לחלון גמיש
+    cv::resizeWindow("Processing Video", windowWidth, windowHeight); // קביעת גודל החלון
+    cv::moveWindow("Processing Video", windowX, windowY); // קביעת מיקום הטקסט
+
+    while (true) {
+        cv::Mat frame;
+        cap >> frame; // קריאה של הפריימים
+        if (frame.empty() || cap.get(cv::CAP_PROP_POS_FRAMES) > endFrame) break; // יציאה אם המסגרת ריקה או אם עברנו את סוף הסרטון
+
+        // חיתוך, סיבוב, החלת פילטר והוספת טקסט
+        frame = trimVideo(frame, startFrame, endFrame);
+        frame = rotateVideo(frame, angle);
+        frame = applyFilter(frame, filterType);
+        frame = addTextOverlay(frame, text, 50, 50); 
+
+        // הצגת הפריימים בעיבוד
+        cv::imshow("Processing Video", frame);
+        writer.write(frame); // כתיבת הפריים לקובץ
+        if (cv::waitKey(30) >= 0) break; // עצירה אם נלחץ על מקש
     }
 
-    writer.release();
-    displayVideo(outputFile);
-}
-
-
-// פונקצייה שמקבלת את הווידיאו ומחילה עליו את כול פונקציות העיבוד ולבסוף קוראת לפונקציית השמירה
-void processVideo(const std::string &inputFile){
-
-    VideoProcessor processor(inputFile);
-
-    // חיתוך הווידיאו
-    cv::Mat trimmedVideo = processor.trimmedVideo(120, 200);
-
-    // שינוי גודל
-    cv::Mat resizedVideo = processor.resizeVideo(trimmedVideo, 640, 480);
-
-    // סיבוב הווידיאו ב-90 מעלות
-    cv::Mat rotatedVideo = processor.rotateVideo(resizedVideo, 90);
-
-    // הוספת טקסט
-    cv::Mat videoWithText = processor.addTextOverlay(rotatedVideo, "The image processing was successful!!!");
-
-    // החלת פילטר
-    cv::Mat filteredVideo = processor.applyFilter(videoWithText);
-
-    // שמירת הווידיאו הסופי בפורמט שונה
-    processor.saveVideo(filteredVideo, inputFile);
+    cap.release(); // שחרור המשאב
+    writer.release(); // שחרור הוידאו
+    cv::destroyAllWindows(); // סגירת חלונות
 }

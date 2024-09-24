@@ -1,5 +1,5 @@
 # Video Processing Project in c++
-================================
+==========================================
 
 This project is a video processing application that leverages **OpenCV** and **GStreamer** to perform various operations on video files. The functionalities include trimming, resizing, rotating, adding text overlays, applying filters, and saving the processed video in a different format.
 
@@ -14,7 +14,7 @@ This project is a video processing application that leverages **OpenCV** and **G
 
 ## Requirements
 
-- C++11 or later
+- C++17 or later
 - OpenCV
 - GStreamer
 - CMake
@@ -57,8 +57,9 @@ To install build and run the project on your computer, follow these steps:
    cmake --build .
  ```
 3. **Run the application**:
+.............................................................
  ```bash
-   ./Project-imege-processing.exe  <"C:\path\to\yourfile.mp4"> 
+   .\VideoProcessor.exe  <"C:\path\to\yourfile.mp4"> 
  ```
 
 
