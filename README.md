@@ -57,7 +57,6 @@ To install build and run the project on your computer, follow these steps:
    cmake --build .
  ```
 3. **Run the application**:
-.............................................................
  ```bash
    .\VideoProcessor.exe  <"C:\path\to\yourfile.mp4"> 
  ```
