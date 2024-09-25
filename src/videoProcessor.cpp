@@ -1,33 +1,73 @@
 #include "videoProcessor.h"
 #include <opencv2/opencv.hpp>
 #include <iostream>
-#include <filesystem>
+
 
 double VideoProcessor::fps = 0.0; // אתחול ה-FPS
+// המרה לפורמט
+cv::VideoWriter VideoProcessor::corvevFormat(const std::string& outputFormat) {
+    int fourcc;
+    cv::VideoWriter writer;
+
+    // קביעת פורמט הוידיאו לפי בקשת המשתמש
+    if (outputFormat == ".avi") {
+        fourcc = cv::VideoWriter::fourcc('M', 'J', 'P', 'G'); // פורמט MJPG
+    } else if (outputFormat == ".mp4") {
+        fourcc = cv::VideoWriter::fourcc('H', '2', '6', '4'); // פורמט MP4
+    } else {
+        std::cerr << "Unsupported output format." << std::endl;
+        return writer; // מחזירים writer ריק במקרה של פורמט לא נתמך
+    }
+
+    // כאן גובה ורוחב ריקים, הם ייקבעו בפונקציה processAndSave
+    writer.open("", fourcc, fps, cv::Size(), true); 
+
+    if (!writer.isOpened()) {
+        std::cerr << "Could not open the output video file for write." << std::endl;
+    }
+
+    return writer; // מחזירים את writer
+}
+
 
 
 // סיבוב הווידיאו (Frame)
-cv::Mat VideoProcessor::rotateVideo(const cv::Mat& frame, int angle) {
-    // תנאי לבדיקה אם השדה ריק
+cv::Mat VideoProcessor::rotateVideo(const cv::Mat& frame, float angle) {
     if (angle == 0) {
         return frame;
     }
-    cv::Point center = cv::Point(frame.cols / 2, frame.rows / 2);
-    cv::Mat rotationMatrix = cv::getRotationMatrix2D(center, angle, 1.0);
+
+    // מרכז התמונה
+    cv::Point center(frame.cols / 2, frame.rows / 2);
+    
+    // יצירת מטריצה לסיבוב
+    cv::Mat rotationMatrix = cv::getRotationMatrix2D(center, angle, 1.0); // אין צורך להמיר ל-double
     cv::Mat rotatedFrame;
-    cv::warpAffine(frame, rotatedFrame, rotationMatrix, frame.size());
+
+    // הגדרת גודל פריים כ-Size
+    cv::Size frameSize(frame.cols, frame.rows);
+    cv::Rect boundingBox = cv::RotatedRect(center, frameSize, angle).boundingRect();
+
+    // עדכון המיקום של הרוטציה
+    rotationMatrix.at<double>(0, 2) += boundingBox.width / 2.0 - center.x; // לא צריך להמיר ל-double
+    rotationMatrix.at<double>(1, 2) += boundingBox.height / 2.0 - center.y; // לא צריך להמיר ל-double
+
+    // סיבוב התמונה
+    cv::warpAffine(frame, rotatedFrame, rotationMatrix, boundingBox.size());
     return rotatedFrame;
 }
+
+
 
 // פילטר על הווידיאו
 cv::Mat VideoProcessor::applyFilter(const cv::Mat& frame, int filterType) {
     cv::Mat filteredFrame;
-    if (filterType == 0) {
+    if (filterType == 1) {
         // גווני אפור
         cv::cvtColor(frame, filteredFrame, cv::COLOR_BGR2GRAY);
-    } else if (filterType == 1) {
+    } else if (filterType == 2) {
         // טשטוש
-        cv::GaussianBlur(frame, filteredFrame, cv::Size(15, 15), 0);
+        cv::GaussianBlur(frame, filteredFrame, cv::Size(15, 15), 0); // הוספת טשטוש ללא סטיית תקן
     } else {
         filteredFrame = frame; // אם לא נבחר פילטר, מחזירים את הפריים המקורי
     }
@@ -35,12 +75,23 @@ cv::Mat VideoProcessor::applyFilter(const cv::Mat& frame, int filterType) {
 }
 
 // הוספת טקסט
-cv::Mat VideoProcessor::addTextOverlay(const cv::Mat& frame, const std::string& text, int x, int y) {
-     // תנאי לבדיקה אם הטקסט ריק מחזירים את הפריים המקורי
+cv::Mat VideoProcessor::addTextOverlay(const cv::Mat& frame, const std::string& text, int textX, int textY) {
+    // אם הטקסט ריק, מחזירים את הפריים המקורי
     if (text.empty()) {
         return frame;
     }
-    cv::Mat frameWithText = frame.clone();
-    cv::putText(frameWithText, text, cv::Point(x, y), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2); // הוספת הטקסט
+
+    cv::Mat frameWithText = frame;
+    
+    // אם לא נבחרו ערכים, נקבע מיקום ברירת מחדל
+    if (textX < 0 || textY >= frame.cols) {
+        textX = frame.cols / 2; // מרכז התמונה
+    }
+    if (textX < 0 || textY >= frame.rows) {
+        textY = frame.rows - 30; // בתחתית התמונה
+    }
+
+    // הוספת הטקסט
+    cv::putText(frameWithText, text, cv::Point(textX, textY), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 2);
     return frameWithText;
 }

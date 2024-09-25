@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 # שם הפרוייקט
 project(Project-image-processing)
 
-set(CMAKE_CXX_STANDARD 17)  # הגדרת גרסת C++ ל-17
+set(CMAKE_CXX_STANDARD 11)  # הגדרת גרסת C++ ל-17
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # מציאת ספריות OPENCV

@@ -14,7 +14,7 @@ This project is a video processing application that leverages **OpenCV** and **G
 
 ## Requirements
 
-- C++17 or later
+- C++11 or later
 - OpenCV
 - GStreamer
 - CMake
@@ -54,13 +54,17 @@ To install build and run the project on your computer, follow these steps:
    cmake ..
  ```
  ```bash
-   cmake --build .
+   cmake --build . --config Debug
+ ```
+  ```bash
+   cd Debug
  ```
 3. **Run the application**:
-.............................................................
  ```bash
    .\VideoProcessor.exe  <"C:\path\to\yourfile.mp4"> 
  ```
+
+  - Press Esc to stop
 
 
 
