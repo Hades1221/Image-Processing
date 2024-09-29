@@ -2,13 +2,8 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 
-
-
 // פונקציה עיקרית לעיבוד הווידיאו
-void VideoProcessor::processAndDisplay(const std::string& inputFile,  const std::string& outputFormat, int startTime, int endTime, float angle, int filterType, int windowWidth, int windowHeight, int windowX, int windowY, const std::string& text) {
-    // קריאה לפונקציית ההמרה
-    cv::VideoWriter writer = corvevFormat(outputFormat);
-
+void VideoProcessor::processAndDisplay(const std::string& inputFile, const std::string& outputFormat, int startTime, int endTime, float angle, int filterType, int windowWidth, int windowHeight, const std::string& text, int textX, int textY, float playbackSpeed, bool faceDetectionEnabled) {
     cv::VideoCapture cap(inputFile);
     if (!cap.isOpened()) {
         std::cerr << "Error opening video file." << std::endl;
@@ -40,6 +35,9 @@ void VideoProcessor::processAndDisplay(const std::string& inputFile,  const std:
     cv::namedWindow("Processing Video", cv::WINDOW_NORMAL); // אפשרות לחלון גמיש
     cv::resizeWindow("Processing Video", windowWidth, windowHeight); // קביעת גודל החלון
     
+    // חישוב זמן ההמתנה בין פריימים
+    int waitTime = static_cast<int>(1000 / (fps * playbackSpeed)); // זמן המתנה ב-milliseconds
+
     // החלת הפונקציות על הפריימים
     while (true) {
         cv::Mat frame;
@@ -49,19 +47,20 @@ void VideoProcessor::processAndDisplay(const std::string& inputFile,  const std:
         // סיבוב, החלת פילטר והוספת טקסט
         frame = rotateVideo(frame, angle);
         frame = applyFilter(frame, filterType);
-        frame = addTextOverlay(frame, text, 50, 50); 
+        frame = addTextOverlay(frame, text, textX, textY);
+
+        // אם המשתמש רוצה זיהוי פנים
+        if (faceDetectionEnabled) {
+            frame = detectFaces(frame); // קריאה לפונקציית זיהוי הפנים
+        }
 
         // הצגת הפריימים בעיבוד
         cv::imshow("Processing Video", frame);
-        writer.write(frame); // כתיבת הפריים לקובץ
-        if (cv::waitKey(30) >= 0) break; // עצירה אם נלחץ על מקש
+        
+        // המתנה על פי מהירות הנגינה
+        if (cv::waitKey(waitTime) >= 0) break; // עצירה אם נלחץ על מקש
     }
 
     cap.release(); // שחרור המשאב
-    writer.release(); // שחרור הוידיאו
     cv::destroyAllWindows(); // סגירת חלונות
 }
-
-
-
-

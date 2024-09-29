@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
     // הגדרות ערכים דיפולטיביים
     int startTime = 0; // ברירת מחדל: 0 שניות
     int endTime = -1;  // ברירת מחדל: עד הסוף
-    float angle = 0.0;     // ברירת מחדל: ללא סיבוב
+    float angle = 0.0; // ברירת מחדל: ללא סיבוב
     int filterType = 0; // ברירת מחדל: ללא פילטר
     int windowWidth = 640; // ברירת מחדל: 640
     int windowHeight = 480; // ברירת מחדל: 480
@@ -21,6 +21,8 @@ int main(int argc, char** argv) {
     std::string outputFormat = ".avi"; // ברירת מחדל להמרה ל-AVI
     int textX = windowWidth / 2; // מיקום X דיפולטיבי: אמצע חלון
     int textY = windowHeight - 30; // מיקום Y דיפולטיבי: בתחתית חלון
+    float playbackSpeed = 1.0f; // ברירת מחדל
+    bool faceDetectionEnabled = false; // ברירת מחדל: זיהוי פנים לא פעיל
 
     // קבלת פורמט הפלט
     std::cout << "Select output format:" << std::endl;
@@ -56,9 +58,9 @@ int main(int argc, char** argv) {
     }
 
     // קבלת סוג פילטר
-    std::cout << "Select a filter type:" <<std::endl; 
-    std::cout << "1 for Grayscale" <<std::endl; 
-    std::cout << "2 for Blur:" <<std::endl;
+    std::cout << "Select a filter type:" << std::endl; 
+    std::cout << "1 for Grayscale" << std::endl; 
+    std::cout << "2 for Blur:" << std::endl;
     std::string filterTypeInput;
     std::getline(std::cin, filterTypeInput);
     if (!filterTypeInput.empty()) {
@@ -101,8 +103,29 @@ int main(int argc, char** argv) {
         }
     }
 
-    VideoProcessor::processAndDisplay(inputFile, outputFormat, startTime, endTime, angle, filterType, windowWidth, windowHeight, textX, textY, text);
-    
+    // קבלת מהירות הפעלה
+    std::cout << "Select playback speed:" << std::endl;
+    std::cout << "1 for half speed (0.5x)" << std::endl;
+    std::cout << "2 for normal (1.0x)" << std::endl;
+    std::cout << "3 for double speed (2.0x)" << std::endl;
+    std::string speedInput;
+    std::getline(std::cin, speedInput);
+    if (speedInput == "1") {
+        playbackSpeed = 0.5f; // חצי מהירות
+    } else if (speedInput == "3") {
+        playbackSpeed = 2.0f; // כפול מהירות
+    }
 
+    // שאלה על זיהוי פנים
+    std::cout << "Do you want to enable face detection? (yes/no): ";
+    std::string faceDetectionInput;
+    std::getline(std::cin, faceDetectionInput);
+    if (faceDetectionInput == "yes") {
+        faceDetectionEnabled = true; // הפעלת זיהוי פנים
+    }
+
+    VideoProcessor vp;
+    vp.VideoProcessor::processAndDisplay(inputFile, outputFormat, startTime, endTime, angle, filterType, windowWidth, windowHeight, text, textX, textY, playbackSpeed, faceDetectionEnabled);
+    
     return 0;
 }

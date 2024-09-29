@@ -1,7 +1,7 @@
 # Video Processing Project in c++
 ===========================================
 
-This project is a video processing application that leverages **OpenCV** and **GStreamer** to perform various operations on video files. The functionalities include trimming, resizing, rotating, adding text overlays, applying filters, and saving the processed video in a different format.
+This project is a video processing application that leverages **OpenCV** and **GStreamer** to perform various operations on video files. The functionalities include trimming, resizing, rotating, adding text overlays, applying filters, changing playback speed, and converting the processed video to a different format.
 
 ## Features
 
@@ -11,6 +11,8 @@ This project is a video processing application that leverages **OpenCV** and **G
 - **Rotation:** Rotate the video by a specified angle.
 - **Text Overlay:** Add dynamic or static text to the video.
 - **Filter Application:** Apply filters such as grayscale.
+- **Playback Speed Adjustment:** Change the playback speed of the video.
+- **Face Detection:** Detect faces within the video frames and highlight them.
 
 ## Requirements
 

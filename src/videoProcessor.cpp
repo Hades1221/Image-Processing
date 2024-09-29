@@ -5,28 +5,29 @@
 
 double VideoProcessor::fps = 0.0; // אתחול ה-FPS
 // המרה לפורמט
-cv::VideoWriter VideoProcessor::corvevFormat(const std::string& outputFormat) {
+cv::VideoWriter VideoProcessor::convertFormat(const std::string& outputFile, const cv::Size& frameSize, double fps, const std::string& outputFormat) {
     int fourcc;
-    cv::VideoWriter writer;
 
-    // קביעת פורמט הוידיאו לפי בקשת המשתמש
+    // קביעת פורמט הווידיאו לפי בקשת המשתמש
     if (outputFormat == ".avi") {
         fourcc = cv::VideoWriter::fourcc('M', 'J', 'P', 'G'); // פורמט MJPG
     } else if (outputFormat == ".mp4") {
         fourcc = cv::VideoWriter::fourcc('H', '2', '6', '4'); // פורמט MP4
     } else {
         std::cerr << "Unsupported output format." << std::endl;
-        return writer; // מחזירים writer ריק במקרה של פורמט לא נתמך
+        return cv::VideoWriter(); // מחזירים אובייקט ריק אם הפורמט לא נתמך
     }
 
-    // כאן גובה ורוחב ריקים, הם ייקבעו בפונקציה processAndSave
-    writer.open("", fourcc, fps, cv::Size(), true); 
+    // יצירת אובייקט VideoWriter
+    cv::VideoWriter writer(outputFile, fourcc, fps, frameSize, true);
 
+    // בדיקה האם פתיחת הקובץ הצליחה
     if (!writer.isOpened()) {
-        std::cerr << "Could not open the output video file for write." << std::endl;
+        std::cerr << "Error: Could not open the output video file for write." << std::endl;
+        return cv::VideoWriter(); // מחזירים אובייקט ריק אם הפתיחה נכשלה
     }
 
-    return writer; // מחזירים את writer
+    return writer; // מחזירים את אובייקט ה-VideoWriter
 }
 
 
@@ -94,4 +95,31 @@ cv::Mat VideoProcessor::addTextOverlay(const cv::Mat& frame, const std::string& 
     // הוספת הטקסט
     cv::putText(frameWithText, text, cv::Point(textX, textY), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 2);
     return frameWithText;
+}
+// פונקצייה לזיהוי פנים
+cv::Mat VideoProcessor::detectFaces(const cv::Mat& frame) {
+    cv::CascadeClassifier faceCascade;
+    faceCascade.load("C:\\opencv\\sources\\data\\haarcascades\\haarcascade_frontalface_default.xml"); //  עדכון הנתיב לפי התיקייה שנמצא הקובץ
+
+    if (faceCascade.empty()) {
+        std::cerr << "Error loading face cascade" << std::endl;
+        return frame; // מחזירים את הפריים המקורי אם לא מצליחים לטעון את הקסדה
+    }
+
+    std::vector<cv::Rect> faces;
+    cv::Mat frameGray;
+
+    // המרת הפריים לגווני אפור
+    cv::cvtColor(frame, frameGray, cv::COLOR_BGR2GRAY);
+    
+    // זיהוי הפנים
+    faceCascade.detectMultiScale(frameGray, faces);
+
+    // ציור מלבנים סביב הפנים
+    cv::Mat frameWithFaces = frame.clone();
+    for (const auto& face : faces) {
+        cv::rectangle(frameWithFaces, face, cv::Scalar(255, 0, 0), 2); // ציור מלבן אדום סביב הפנים
+    }
+
+    return frameWithFaces;
 }
