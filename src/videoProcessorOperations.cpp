@@ -38,12 +38,26 @@ void VideoProcessor::processAndDisplay(const std::string& inputFile, const std::
     // חישוב זמן ההמתנה בין פריימים
     int waitTime = static_cast<int>(1000 / (fps * playbackSpeed)); // זמן המתנה ב-milliseconds
 
+    // קביעת מספר הפריימים לדלג עליהם
+    int skipFrames = 3; // ניתן לשנות את המספר הזה לפי הצורך
+
+    // החלת הפונקציות על הפריימים
+    int frameCount = 0; // משתנה לספירת פריימים
+
+
     // החלת הפונקציות על הפריימים
     while (true) {
         cv::Mat frame;
         cap >> frame; // קריאה של הפריימים
         if (frame.empty() || cap.get(cv::CAP_PROP_POS_FRAMES) > endFrame) break; // יציאה אם המסגרת ריקה או אם עברנו את סוף הסרטון
 
+       // בדיקה אם לדלג על הפריים הנוכחי
+        if (frameCount % (skipFrames + 1) != 0) {
+            frameCount++; // מעדכן את מספר הפריימים
+            continue; // לדלג על עיבוד הפריים הזה
+        }
+
+        
         // סיבוב, החלת פילטר והוספת טקסט
         frame = rotateVideo(frame, angle);
         frame = applyFilter(frame, filterType);

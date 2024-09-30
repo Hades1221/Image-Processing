@@ -98,8 +98,9 @@ cv::Mat VideoProcessor::addTextOverlay(const cv::Mat& frame, const std::string& 
 }
 // פונקצייה לזיהוי פנים
 cv::Mat VideoProcessor::detectFaces(const cv::Mat& frame) {
-    cv::CascadeClassifier faceCascade;
-    faceCascade.load("C:\\opencv\\sources\\data\\haarcascades\\haarcascade_frontalface_default.xml"); //  עדכון הנתיב לפי התיקייה שנמצא הקובץ
+ 
+     cv::CascadeClassifier faceCascade;
+    faceCascade.load("C:\\opencv\\sources\\data\\haarcascades\\haarcascade_frontalface_default.xml");
 
     if (faceCascade.empty()) {
         std::cerr << "Error loading face cascade" << std::endl;
@@ -109,17 +110,24 @@ cv::Mat VideoProcessor::detectFaces(const cv::Mat& frame) {
     std::vector<cv::Rect> faces;
     cv::Mat frameGray;
 
-    // המרת הפריים לגווני אפור
-    cv::cvtColor(frame, frameGray, cv::COLOR_BGR2GRAY);
-    
+    // בדיקה אם התמונה כבר בגווני אפור
+    if (frame.channels() == 3) {
+        cv::cvtColor(frame, frameGray, cv::COLOR_BGR2GRAY);
+    } else {
+        frameGray = frame; // אפשר שזו כבר תמונה בגווני אפור
+    }
+
     // זיהוי הפנים
-    faceCascade.detectMultiScale(frameGray, faces);
+    faceCascade.detectMultiScale(frameGray, faces, 1.1, 4, 0, cv::Size(30, 30));
 
     // ציור מלבנים סביב הפנים
     cv::Mat frameWithFaces = frame.clone();
-    for (const auto& face : faces) {
-        cv::rectangle(frameWithFaces, face, cv::Scalar(255, 0, 0), 2); // ציור מלבן אדום סביב הפנים
+    if (!faces.empty()) { // רק אם יש פנים, נצייר
+        for (const auto& face : faces) {
+            cv::rectangle(frameWithFaces, face, cv::Scalar(255, 0, 0), 2); // ציור מלבן אדום סביב הפנים
+        }
+        return frameWithFaces; // מחזירים את הפריים עם פנים
+    } else {
+        return frame; // מחזירים את הפריים המקורי אם אין פנים
     }
-
-    return frameWithFaces;
 }
